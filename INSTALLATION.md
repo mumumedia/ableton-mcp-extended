@@ -91,23 +91,17 @@ C:\Users\[YourUsername]\Documents\Ableton\User Library\Remote Scripts\
 
 #### 🍎 macOS
 
-There are two possible locations depending on your Ableton edition. **Try Option A first.**
-
-**Option A** (Ableton Live 11, Live 12 Standard, and most editions):
+**Use this location first** — it's Ableton's officially documented path for third-party remote scripts, and works across Live 11/12 editions (Standard, Suite, and Lite included):
 ```
-~/Library/Preferences/Ableton/Live [Version]/User Remote Scripts/
+~/Music/Ableton/User Library/Remote Scripts/
 ```
 **Quick way to find it:**
 1. Open **Finder**
 2. Press **Cmd + Shift + G**
-3. Paste: `~/Library/Preferences/Ableton/`
-4. Navigate to your Live version folder, then `User Remote Scripts`
+3. Paste: `~/Music/Ableton/User Library/Remote Scripts/`
+4. If `Remote Scripts` doesn't exist yet, create it
 
-**Option B** (Ableton Live 12 Suite and some newer installations):
-```
-/Applications/Ableton Live 12 Suite.app/Contents/App-Resources/MIDI Remote Scripts/
-```
-> 💡 The app name varies — check your `/Applications` folder (e.g. "Ableton Live 12 Suite.app", "Ableton Live 11 Suite.app"). If AbletonMCP doesn't appear in the Control Surface dropdown after restarting Live with Option A, try Option B.
+> ⚠️ Some older guides point to `~/Library/Preferences/Ableton/Live [Version]/User Remote Scripts/` — in testing on Live 12 (Lite), scripts placed there were **not** picked up. Use the User Library path above; only fall back to the Preferences path or `/Applications/Ableton Live 12 Suite.app/Contents/App-Resources/MIDI Remote Scripts/` if AbletonMCP still doesn't appear after a full restart of Live.
 
 ### Install the Main Remote Script
 
@@ -281,14 +275,14 @@ Note: both remote scripts (TCP and UDP) can co-exist without issues.
 <summary><strong>🔴 "AbletonMCP not found in Control Surface list"</strong></summary>
 
 **Possible causes:**
-- Remote Script not in correct folder
+- Remote Script not in correct folder (macOS: use `~/Music/Ableton/User Library/Remote Scripts/`, **not** the `~/Library/Preferences/Ableton/...` path — the latter was not picked up in testing on Live 12)
 - File permissions issue
 - Incorrect folder name
 
 **Solutions:**
 1. Verify folder path: `Remote Scripts/AbletonMCP/__init__.py`
 2. Check file permissions (should be readable)
-3. Restart Ableton Live completely
+3. Fully quit and reopen Ableton Live (Live only scans this folder at startup)
 4. Check Ableton's log for error messages
 </details>
 

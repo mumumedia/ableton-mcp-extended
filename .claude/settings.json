@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__AbletonMCP__get_browser_items_at_path",
+      "mcp__AbletonMCP__load_instrument_or_effect",
+      "mcp__AbletonMCP__create_arrangement_midi_clip",
+      "mcp__AbletonMCP__add_notes_to_arrangement_clip",
+      "mcp__AbletonMCP__set_track_volume",
+      "mcp__AbletonMCP__set_track_panning",
+      "mcp__AbletonMCP__set_ableton_view",
+      "mcp__AbletonMCP__set_song_time",
+      "mcp__AbletonMCP__get_arrangement_info",
+      "mcp__AbletonMCP__replace_arrangement_clip_notes",
+      "mcp__AbletonMCP__get_track_info",
+      "mcp__AbletonMCP__get_device_parameters",
+      "mcp__AbletonMCP__get_session_info",
+      "mcp__AbletonMCP__get_browser_tree",
+      "mcp__AbletonMCP__get_chain_info",
+      "mcp__AbletonMCP__set_device_parameter",
+      "mcp__AbletonMCP__delete_arrangement_clip",
+      "mcp__AbletonMCP__manage_clip_automation",
+      "mcp__AbletonMCP__set_tempo",
+      "mcp__AbletonMCP__create_clip",
+      "mcp__AbletonMCP__add_notes_to_clip",
+      "mcp__AbletonMCP__fire_clip",
+      "mcp__AbletonMCP__start_playback",
+      "mcp__AbletonMCP__stop_playback",
+      "mcp__AbletonMCP__stop_clip",
+      "mcp__AbletonMCP__get_track_volume",
+      "mcp__AbletonMCP__delete_device",
+      "mcp__AbletonMCP__set_clip_name",
+      "Bash(find /Users/alastairnorman/Documents/studioworks-core -name \"*.py\" | head -20 && find /Users/alastairnorman -name \"*.py\" -path \"*/AbletonMCP*\" 2>/dev/null | head -10)",
+      "Read(//Users/alastairnorman/**)"
+    ]
+  }
+}
