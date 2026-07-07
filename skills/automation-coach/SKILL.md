@@ -17,14 +17,14 @@ description: "Guides parameter automation in Ableton — when to automate, which
 
 ## 2. Tool Workflow
 
-1. `get_device_parameters` on the target device/track — note the `parameter_id` and current value for the parameter you want to automate
+1. `get_device_parameters` on the target device/track — note the `parameter_name` and current value for the parameter you want to automate
 2. `create_clip` in the target track + slot at the required length (e.g., 16.0 for a 4-bar automation clip, 64.0 for 16 bars)
 3. `manage_clip_automation` with action `add_point` for each envelope breakpoint:
    ```
    track_index: <1-based track number>
    clip_index: <1-based slot number>
    action: "add_point"
-   parameter_id: <from get_device_parameters>
+   parameter_name: <exact name from get_device_parameters>
    time_in_beats: <position in clip, float>
    value: <normalized 0.0–1.0>
    ```

@@ -90,6 +90,7 @@ After the user listens, refine based on what's still wrong. References are inher
 - Don't download or process copyrighted audio.
 - Don't recommend specific sample packs unless they're public (Splice, Output) and the user has them.
 - Don't apply more than 3 reference moves before letting the user listen.
+- Don't guess or hand-construct a browser URI for a named preset — resolve it via `get_browser_items_at_path` first (stock device URIs like `query:Synths#Wavetable` or `query:Audio Effects#EQ Eight` are static and safe to use directly).
 
 ## When the reference is unfamiliar to you
 

@@ -13,7 +13,7 @@ except ImportError:
 
 from dataclasses import dataclass
 from contextlib import asynccontextmanager
-from typing import AsyncIterator, Dict, Any, List, Union
+from typing import AsyncIterator, Dict, Any, List, Union, Literal
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, 
@@ -494,7 +494,7 @@ def get_track_volume(ctx: Context, track_index: int) -> str:
     """Get the current fader volume and panning for a track.
 
     Returns the raw normalized value, its min/max range, and the panning.
-    Volume 0.85 = 0 dB unity gain. Use this before set_track_volume to
+    Volume 0.85 = 0 dB unity gain. Use this before set_track_property to
     understand the current state.
 
     Parameters:
@@ -530,60 +530,48 @@ def get_track_volume(ctx: Context, track_index: int) -> str:
 
 
 @mcp.tool()
-def set_track_volume(ctx: Context, track_index: int, volume: float) -> str:
-    """Set the mixer fader volume for a track directly.
+def set_track_property(ctx: Context, track_index: int, property: Literal["volume", "panning"], value: float) -> str:
+    """Set the mixer fader volume or panning for a track directly (not a device parameter).
 
-    This controls the actual track fader, not any device parameter.
-
-    Volume scale (normalized):
-      0.0   = silence
-      0.85  = 0 dB (unity gain, Ableton's default fader position)
-      1.0   = maximum (~+6 dB)
+    Volume scale (normalized): 0.0 = silence, 0.85 = 0 dB (unity gain, Ableton's
+    default fader position), 1.0 = maximum (~+6 dB). Panning scale: -1.0 = full left,
+    0.0 = center, +1.0 = full right. value is clamped to the valid range for property.
 
     Parameters:
     - track_index: Track number (1-based). Return tracks come after session tracks.
-    - volume: Normalized volume 0.0–1.0. Use 0.85 for unity (0 dB).
+    - property: "volume" or "panning".
+    - value: For volume, 0.0-1.0 (0.85 = unity/0dB). For panning, -1.0 to 1.0.
     """
     try:
         ableton = get_ableton_connection()
         ti = _to_zero_based(track_index, "track_index")
-        result = ableton.send_command("set_track_volume", {
-            "track_index": ti,
-            "volume": volume,
-        })
-        name = result.get("track_name", "?")
-        vol = result.get("volume", volume)
-        import math
-        unity = 0.85
-        db_str = f"{20 * math.log10(vol / unity):+.1f} dB" if vol > 0 else "-inf dB"
-        return f"Set '{name}' fader to {vol:.4f} (≈ {db_str})"
+        if property == "volume":
+            clamped = max(0.0, min(1.0, value))
+            result = ableton.send_command("set_track_volume", {
+                "track_index": ti,
+                "volume": clamped,
+            })
+            name = result.get("track_name", "?")
+            vol = result.get("volume", clamped)
+            import math
+            unity = 0.85
+            db_str = f"{20 * math.log10(vol / unity):+.1f} dB" if vol > 0 else "-inf dB"
+            return f"Set '{name}' fader to {vol:.4f} (≈ {db_str})"
+        elif property == "panning":
+            clamped = max(-1.0, min(1.0, value))
+            result = ableton.send_command("set_track_panning", {
+                "track_index": ti,
+                "panning": clamped,
+            })
+            name = result.get("track_name", "?")
+            pan = result.get("panning", clamped)
+            pan_str = "center" if abs(pan) < 0.01 else (f"{abs(pan):.2f} {'L' if pan < 0 else 'R'}")
+            return f"Set '{name}' panning to {pan:.4f} ({pan_str})"
+        else:
+            return f"Error: unknown property '{property}' (expected 'volume' or 'panning')"
     except Exception as e:
-        logger.error(f"Error setting track volume: {str(e)}")
-        return f"Error setting track volume: {str(e)}"
-
-
-@mcp.tool()
-def set_track_panning(ctx: Context, track_index: int, panning: float) -> str:
-    """Set the mixer panning for a track.
-
-    Parameters:
-    - track_index: Track number (1-based).
-    - panning: -1.0 = full left, 0.0 = center, +1.0 = full right.
-    """
-    try:
-        ableton = get_ableton_connection()
-        ti = _to_zero_based(track_index, "track_index")
-        result = ableton.send_command("set_track_panning", {
-            "track_index": ti,
-            "panning": panning,
-        })
-        name = result.get("track_name", "?")
-        pan = result.get("panning", panning)
-        pan_str = "center" if abs(pan) < 0.01 else (f"{abs(pan):.2f} {'L' if pan < 0 else 'R'}")
-        return f"Set '{name}' panning to {pan:.4f} ({pan_str})"
-    except Exception as e:
-        logger.error(f"Error setting track panning: {str(e)}")
-        return f"Error setting track panning: {str(e)}"
+        logger.error(f"Error setting track {property}: {str(e)}")
+        return f"Error setting track {property}: {str(e)}"
 
 
 @mcp.tool()
@@ -1097,13 +1085,9 @@ def load_external_plugin(
     exact_match: bool = False,
     refresh_cache: bool = False,
 ) -> str:
-    """Load an external plugin onto a track by plugin name (no URI required).
-
-    Parameters:
-    - track_index: Track number (1-based).
-    - plugin_name: Plugin name to match (e.g., "FabFilter Pro-Q 3").
-    - exact_match: If True, require exact normalized name match.
-    - refresh_cache: If True, force a rescan before matching.
+    """Load an external plugin onto a track by name (no URI required, e.g. "FabFilter
+    Pro-Q 3"). track_index is 1-based. exact_match requires an exact normalized-name
+    match; refresh_cache forces a rescan before matching.
     """
     try:
         if not plugin_name or not plugin_name.strip():
@@ -1157,13 +1141,8 @@ def load_external_plugin(
 
 @mcp.tool()
 def load_drum_kit(ctx: Context, track_index: int, rack_uri: str, kit_path: str) -> str:
-    """
-    Load a drum rack and then load a specific drum kit into it.
-
-    Parameters:
-    - track_index: Track number (1-based).
-    - rack_uri: The URI of the drum rack to load (e.g., 'Drums/Drum Rack').
-    - kit_path: Path to the drum kit inside the browser (e.g., 'drums/acoustic/kit1').
+    """Load a drum rack, then load a specific drum kit into it. track_index is
+    1-based. rack_uri e.g. 'Drums/Drum Rack'; kit_path e.g. 'drums/acoustic/kit1'.
     """
     try:
         ableton = get_ableton_connection()
@@ -1432,15 +1411,9 @@ def create_arrangement_midi_clip(
     length_beats: float = 4.0,
     name: str = "",
 ) -> str:
-    """Create an empty MIDI clip in the arrangement.
-
-    Parameters:
-    - track_index: Track number (1-based).
-    - start_bar: Start bar (1-based). Takes precedence over start_beat.
-    - end_bar: End bar (1-based). Used with start_bar to compute length.
-    - start_beat: Start position in beats.
-    - length_beats: Clip length in beats.
-    - name: Optional clip name.
+    """Create an empty MIDI clip in the arrangement. track_index/start_bar/end_bar
+    are 1-based; start_bar takes precedence over start_beat, and end_bar (with
+    start_bar) takes precedence over length_beats.
     """
     try:
         ableton = get_ableton_connection()
@@ -1593,23 +1566,10 @@ def set_arrangement_clip_property(
     warping: bool = None,
     warp_mode: int = None,
 ) -> str:
-    """Set properties on an arrangement clip.
-
-    Parameters:
-    - track_index: Track number (1-based).
-    - clip_index: Clip position (1-based).
-    - clip_name: Clip name (alternative to clip_index).
-    - name: New clip name.
-    - muted: Mute state.
-    - color: Color (0x00RRGGBB).
-    - looping: Loop on/off.
-    - loop_start: Loop start in beats.
-    - loop_end: Loop end in beats.
-    - gain: Audio gain (0.0-1.0).
-    - pitch_coarse: Semitone pitch shift (-48 to 48).
-    - pitch_fine: Fine pitch shift (-50 to 49 cents).
-    - warping: Warp on/off.
-    - warp_mode: Warp mode (0-6).
+    """Set properties on an arrangement clip. track_index/clip_index are 1-based;
+    clip_name is an alternative to clip_index. color: 0x00RRGGBB. loop_start/loop_end
+    are in beats. gain: 0.0-1.0. pitch_coarse: -48 to 48 semitones. pitch_fine: -50 to
+    49 cents. warp_mode: 0-6. Unspecified args leave that property unchanged.
     """
     try:
         ableton = get_ableton_connection()
@@ -1652,12 +1612,8 @@ def add_notes_to_arrangement_clip(
     notes: List[Dict[str, Union[int, float, bool]]],
 ) -> str:
     """Add MIDI notes to an arrangement clip without clearing existing notes.
-
-    Parameters:
-    - track_index: Track number (1-based).
-    - clip_index: Arrangement clip position (1-based, ordered by start_time).
-    - notes: List of note dicts: [{pitch, start_time, duration, velocity, mute?}].
-      pitch: MIDI note number (0-127). velocity: 0-127. start_time/duration: beats.
+    track_index/clip_index are 1-based (clips ordered by start_time).
+    notes: [{pitch (0-127), start_time, duration (beats), velocity (0-127), mute?}].
     """
     try:
         ableton = get_ableton_connection()
@@ -1687,17 +1643,9 @@ def get_arrangement_clip_notes(
     to_bar: int = 0,
     to_beat: float = 0.0,
 ) -> str:
-    """Read MIDI notes from an arrangement clip.
-
-    Parameters:
-    - track_index: Track number (1-based).
-    - clip_index: Arrangement clip position (1-based).
-    - from_pitch: Lowest pitch to include (0-127, default 0).
-    - to_pitch: Highest pitch to include (0-127, default 127 = all).
-    - from_bar: Start bar (1-based). Takes precedence over from_beat.
-    - from_beat: Start position in beats.
-    - to_bar: End bar (1-based). Takes precedence over to_beat.
-    - to_beat: End position in beats (0 = full clip length).
+    """Read MIDI notes from an arrangement clip. track_index/clip_index are 1-based.
+    from_pitch/to_pitch: 0-127 range to include. from_bar/to_bar (1-based) take
+    precedence over from_beat/to_beat when both given; to_beat=0 means full clip length.
     """
     try:
         ableton = get_ableton_connection()
@@ -1742,16 +1690,9 @@ def delete_notes_from_arrangement_clip(
     from_time: float = 0.0,
     to_time: float = 0.0,
 ) -> str:
-    """Delete notes from an arrangement MIDI clip by pitch and time range.
-    Omit all range params to delete all notes. to_time=0 means full clip length.
-
-    Parameters:
-    - track_index: Track number (1-based).
-    - clip_index: Arrangement clip position (1-based).
-    - from_pitch: Lowest MIDI pitch to remove (0-127, default 0).
-    - to_pitch: Highest MIDI pitch to remove inclusive (0-127, default 127 = all).
-    - from_time: Start time in beats (default 0.0).
-    - to_time: End time in beats; 0 means use full clip length (default 0).
+    """Delete notes from an arrangement MIDI clip by pitch (0-127) and time (beats) range.
+    track_index/clip_index are 1-based. Omit range params to delete all notes;
+    to_time=0 means full clip length.
     """
     try:
         ableton = get_ableton_connection()
@@ -1778,15 +1719,9 @@ def replace_arrangement_clip_notes(
     clip_index: int,
     notes: List[Dict[str, Union[int, float, bool]]],
 ) -> str:
-    """Replace all notes in an arrangement MIDI clip with a new set.
-    Clears existing notes then sets the new ones atomically. If replace fails,
-    an error is returned and the clip state is reported as potentially empty.
-
-    Parameters:
-    - track_index: Track number (1-based).
-    - clip_index: Arrangement clip position (1-based).
-    - notes: List of note dicts: [{pitch, start_time, duration, velocity, mute?}].
-      pitch: MIDI note number (0-127). velocity: 0-127. start_time/duration: beats.
+    """Replace all notes in an arrangement MIDI clip with a new set (clear then set,
+    atomic; on failure the clip may be left empty). track_index/clip_index are 1-based.
+    notes: [{pitch (0-127), start_time, duration (beats), velocity (0-127), mute?}].
     """
     try:
         ableton = get_ableton_connection()
@@ -1850,8 +1785,8 @@ def manage_clip_automation(
     track_index: int,
     clip_index: int = 1,
     clip_name: str = "",
-    action: str = "create",
-    parameter_name: str = "volume",
+    action: Literal["create", "clear", "clear_all", "add_point"] = "create",
+    parameter_name: str = "Track Volume",
     time_in_beats: float = 0.0,
     value: float = 0.5,
 ) -> str:
@@ -1861,8 +1796,10 @@ def manage_clip_automation(
     - track_index: Track number (1-based).
     - clip_index: Clip position (1-based).
     - clip_name: Clip name (alternative to clip_index).
-    - action: "create", "clear", "clear_all", or "add_point".
-    - parameter_name: Parameter to automate (e.g., "volume", "panning").
+    - action: see type.
+    - parameter_name: Exact Live API parameter name (e.g., "Track Volume", "Track Panning"
+      — NOT generic terms like "volume"; use get_device_parameters to find exact names
+      for device parameters).
     - time_in_beats: Beat position for "add_point" action (e.g., 4.0 = beat 5 in 4/4).
     - value: Normalized value 0.0–1.0 for "add_point" action.
     """
@@ -1904,17 +1841,9 @@ def get_device_parameters(
     category: str = "",
     show_all: bool = False,
 ) -> str:
-    """List parameters for a device on a track.
-
-    Parameters:
-    - track_index: Track number (1-based).
-    - device_index: Device number on the track (1-based, default 1).
-    - chain_index: Chain number inside a rack (1-based, 0 = no chain).
-    - category: Filter by category name (returns detail for that category).
-    - show_all: If True, return all parameters in detail mode.
-
-    Default mode returns a summary grouped by category with counts.
-    Specify category or show_all=True for full parameter details.
+    """List parameters for a device on a track. track_index/device_index are 1-based;
+    chain_index is 1-based, 0 = no chain. Default mode returns a summary grouped by
+    category with counts — pass category or show_all=True for full parameter details.
     """
     try:
         ableton = get_ableton_connection()
@@ -1994,15 +1923,9 @@ def set_device_parameter(
     parameter_index: int = 0,
     value: float = 0.0,
 ) -> str:
-    """Set a device parameter value.
-
-    Parameters:
-    - track_index: Track number (1-based).
-    - device_index: Device number (1-based, default 1).
-    - chain_index: Chain number inside a rack (1-based, 0 = no chain).
-    - parameter_name: Parameter name, friendly alias, or partial match.
-    - parameter_index: Parameter number (1-based, alternative to name).
-    - value: Normalized value 0.0-1.0.
+    """Set a device parameter value. track_index/device_index/chain_index are 1-based
+    (chain_index 0 = no chain). parameter_name accepts exact name, friendly alias, or
+    partial match; parameter_index (1-based) is an alternative to name. value: 0.0-1.0.
     """
     try:
         ableton = get_ableton_connection()

@@ -19,7 +19,7 @@ bpm_range: 70–145
 ## 2. Workflow
 
 **Step 1 — Setup**
-`get_session_info` to read current state. `set_tempo` to genre BPM. Aim for 4–6 MIDI tracks: Drums, Bass, Pad, Lead/Arp, and optionally Piano/Keys or a Texture layer.
+`get_session_info` to read current state. `set_tempo` to genre BPM. Aim for 4–6 MIDI tracks: Drums, Bass, Pad, Lead/Arp, and optionally Piano/Keys or a Texture layer. Read [../_shared/genre-defaults.md](../_shared/genre-defaults.md) now — Steps 2 and beyond need its MIDI note numbers and velocity values.
 
 **Step 2 — Drums**
 `load_drum_kit` (for a kit preset) or `load_instrument_or_effect` with a `uri` from `get_browser_items_at_path` path `Instruments/Drum Rack`. `create_clip` at length 16.0 (4-bar loop). `add_notes_to_clip` using the MIDI Map table below. Use 1 bar = 4.0 beats.
@@ -35,16 +35,7 @@ bpm_range: 70–145
 
 ## 3. Drum MIDI Map
 
-Standard 909/808 layout — verify your specific kit's pad assignments before writing notes.
-
-| Sound | Note Name | MIDI # |
-|-------|-----------|--------|
-| Kick | C1 | 36 |
-| Snare / Clap | D1 | 38 |
-| Closed Hi-Hat | F#1 | 42 |
-| Open Hi-Hat | A#1 | 46 |
-| Ride | D#2 | 51 |
-| Crash | C#2 | 49 |
+See [../_shared/genre-defaults.md](../_shared/genre-defaults.md) for the standard 909/808 note layout (verify your specific kit's pad assignments before writing notes).
 
 ## 4. Pattern Templates
 
@@ -62,19 +53,7 @@ Standard 909/808 layout — verify your specific kit's pad assignments before wr
 
 ## 5. Mix Balance Defaults
 
-Velocity values establish relative loudness between MIDI instruments. Aim for the kick as the loudest anchor and work downward.
-
-| Role | Velocity | Notes |
-|------|----------|-------|
-| Kick | 110 | Loudest element; anchor |
-| Snare / Clap | 100 | Matches kick presence |
-| Closed Hi-Hat (on-beat) | 85 | Clear but below snare |
-| Closed Hi-Hat (off-beat) | 65 | Light offbeat feel |
-| Piano / Keys | 85–90 | Clear and present |
-| Bass | 90 | Sits just below kick |
-| Lead / Arp root | 75–80 | Audible, not dominant |
-| Lead / Arp upper tones | 65 | Cascades behind root |
-| Pad | 65 | Background warmth; don't mask lead |
+See [../_shared/genre-defaults.md](../_shared/genre-defaults.md) for velocity values by role (kick as loudest anchor, working downward).
 
 ## 6. Tool Notes
 

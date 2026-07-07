@@ -33,97 +33,16 @@ Two use cases — pick the right workflow from Section 4:
 
 Formula: Beats Start = (Start Bar − 1) × 4. Use `start_bar`/`end_bar` directly in `create_arrangement_midi_clip`.
 
-**House (128 BPM, ~5.5 min, ~136 bars):**
+| Genre | BPM | Length | Bars |
+|-------|-----|--------|------|
+| House | 128 | ~5.5 min | ~136 |
+| Techno | 138 | ~7 min | ~168 |
+| Deep House | 122 | ~6.5 min | ~164 |
+| Lo-fi Downtempo | 85 | ~4 min | ~80 |
+| Emotional House / UK Garage | 108–130 | ~5 min | ~120 |
+| Pop / Hip-hop | 95 | ~3.5 min | ~84 |
 
-| Section | Start Bar | End Bar | Beats Start |
-|---------|-----------|---------|-------------|
-| Intro | 1 | 16 | 0.0 |
-| Buildup 1 | 17 | 32 | 64.0 |
-| Drop 1 | 33 | 64 | 128.0 |
-| Breakdown | 65 | 80 | 256.0 |
-| Buildup 2 | 81 | 88 | 320.0 |
-| Drop 2 | 89 | 120 | 352.0 |
-| Outro | 121 | 136 | 480.0 |
-
-**Techno (138 BPM, ~7 min, ~168 bars):**
-
-| Section | Start Bar | End Bar | Beats Start |
-|---------|-----------|---------|-------------|
-| Intro | 1 | 32 | 0.0 |
-| Buildup 1 | 33 | 48 | 128.0 |
-| Drop 1 | 49 | 80 | 192.0 |
-| Breakdown | 81 | 96 | 320.0 |
-| Buildup 2 | 97 | 104 | 384.0 |
-| Drop 2 | 105 | 152 | 416.0 |
-| Outro | 153 | 168 | 608.0 |
-
-**Deep House (122 BPM, ~6.5 min, ~164 bars):**
-
-| Section | Start Bar | End Bar | Beats Start |
-|---------|-----------|---------|-------------|
-| Intro | 1 | 16 | 0.0 |
-| Groove Intro | 17 | 32 | 64.0 |
-| Breakdown 1 | 33 | 48 | 128.0 |
-| Buildup | 49 | 56 | 192.0 |
-| Drop | 57 | 96 | 224.0 |
-| Breakdown 2 | 97 | 112 | 384.0 |
-| Buildup 2 | 113 | 120 | 448.0 |
-| Drop 2 | 121 | 148 | 480.0 |
-| Outro | 149 | 164 | 592.0 |
-
-**Lo-fi Downtempo (85 BPM, ~4 min, ~80 bars):**
-
-| Section | Start Bar | End Bar | Beats Start |
-|---------|-----------|---------|-------------|
-| Intro | 1 | 8 | 0.0 |
-| Verse 1 | 9 | 24 | 32.0 |
-| Chorus 1 | 25 | 32 | 96.0 |
-| Verse 2 | 33 | 48 | 128.0 |
-| Chorus 2 | 49 | 64 | 192.0 |
-| Outro | 65 | 80 | 256.0 |
-
-No drops — energy builds through subtle layering and variation. Keep all velocities 10–15 below standard defaults for warmth (e.g. kick 95, snare 85, bass 75, pad 55).
-
-**Emotional House / UK Garage (Fred again, Bicep, Four Tet — 108–130 BPM, ~5 min, ~120 bars):**
-
-Characteristic sound: long sparse intro, vocal-led breakdown at emotional peak, no hard EDM drop formula. Energy builds through texture layering, not filter sweeps. Velocity restraint throughout — nothing hits full tilt until the peak.
-
-| Section | Start Bar | End Bar | Beats Start |
-|---------|-----------|---------|-------------|
-| Intro | 1 | 8 | 0.0 |
-| Verse 1 | 9 | 24 | 32.0 |
-| Pre-peak | 25 | 32 | 96.0 |
-| Peak | 33 | 64 | 128.0 |
-| Breakdown | 65 | 72 | 256.0 |
-| Rebuild | 73 | 80 | 288.0 |
-| Peak 2 | 81 | 112 | 320.0 |
-| Outro | 113 | 128 | 448.0 |
-
-Layer guidance:
-- Intro: texture/arp only — no drums, no bass
-- Verse 1: piano + bass + texture; drums enter quietly (loose pattern, low velocity)
-- Pre-peak: all tracks enter; keep drums at 70–80 velocity, pad underneath
-- Peak: full kit (tight pattern) + piano hi register + bass + pad hi-reg + arp; max velocity kick ~95 (not 110 — this genre stays warm)
-- Breakdown: piano + vocal only; everything else silent; this is the emotional moment
-- Rebuild: loose drums + bass + pad re-enter; same texture as pre-peak
-- Peak 2: same as Peak 1 or slight variation
-- Outro: strip to piano + pad + texture; fade over 8 bars
-
-**Pop / Hip-hop (95 BPM, ~3.5 min, ~84 bars):**
-
-| Section | Start Bar | End Bar | Beats Start |
-|---------|-----------|---------|-------------|
-| Intro | 1 | 8 | 0.0 |
-| Verse 1 | 9 | 24 | 32.0 |
-| Pre-Chorus | 25 | 28 | 96.0 |
-| Chorus 1 | 29 | 36 | 112.0 |
-| Verse 2 | 37 | 52 | 144.0 |
-| Pre-Chorus 2 | 53 | 56 | 208.0 |
-| Chorus 2 | 57 | 64 | 224.0 |
-| Bridge | 65 | 72 | 256.0 |
-| Chorus Out | 73 | 84 | 288.0 |
-
-8-bar sections; energy peaks at every chorus. Intro and verse are stripped; chorus gets all elements.
+Bar maps: [genre-bar-maps.md](references/genre-bar-maps.md).
 
 ## 4. Tool Workflow
 
@@ -169,7 +88,7 @@ add_notes_to_arrangement_clip(track_index, clip_name="Drop Kick", notes=[...])
 Use genre-edm-production patterns: kick at beats 0, 1, 2, 3 per bar; snare at 1, 3; 8th-note hats every 0.5 beats.
 For bass: root note per chord, held 3.8 beats, starting at bar boundaries (0.0, 4.0, 8.0…).
 For breakdown sections: fill pad/melody tracks only; leave drum track clips empty.
-MIDI map (verify against your kit): kick=C1/36, snare=D1/38, closed hat=F#1/42, open hat=A#1/46.
+MIDI map: see [../_shared/genre-defaults.md](../_shared/genre-defaults.md) (verify against your kit).
 
 **Step 6 — Add buildup automation**
 ```
@@ -177,14 +96,14 @@ manage_clip_automation(
   track_index=<pad or bass track>,
   clip_name="Buildup Bass",
   action="add_point",
-  parameter_name="Filter Cutoff",   ← use parameter_name (string), NOT parameter_id
+  parameter_name="Filter Cutoff",
   time_in_beats=0.0, value=0.05
 )
 manage_clip_automation(..., time_in_beats=<buildup length in beats>, value=1.0)
 ```
 Result: full filter sweep from nearly-closed to wide-open over the buildup.
 
-Note: the correct MCP parameter key is `parameter_name` (a human-readable string like "Filter Cutoff", "volume", "panning"). Use `get_device_parameters` to see the available parameter names for a specific device. The automation-coach skill incorrectly shows `parameter_id` in its code example — ignore that; `parameter_name` is the correct key.
+Note: the correct MCP parameter key is `parameter_name` (a human-readable string like "Filter Cutoff", "volume", "panning"). Use `get_device_parameters` to see available names.
 
 **Step 7 — Verify**
 `get_arrangement_info` to confirm clip positions and lengths.
@@ -290,6 +209,6 @@ Do not apply master automation until all clip notes are finalized.
 - Don't place clips without calling `get_arrangement_info` first — overlapping existing clips silently truncates them
 - Don't skip naming clips — unnamed clips cannot be targeted by `manage_clip_automation` `clip_name`
 - Don't skip the confirm-plan step — stating the mapping before execution prevents misplaced clips that are tedious to undo
-- Don't use velocity 100–127 on all elements in the drop — match genre-edm-production mix balance defaults (kick 110, snare 100, hats 85/65, bass 90, pad 65); for emotional house keep kick ≤95 for warmth
+- Don't use velocity 100–127 on all elements in the drop — match the mix balance defaults in [../_shared/genre-defaults.md](../_shared/genre-defaults.md); for emotional house keep kick ≤95 for warmth
 - Don't make breakdowns longer than 16 bars in House/Techno — listeners lose energy connection past that point
 - Don't apply master automation before clip notes are finalized — volume automation interacts with note velocities
