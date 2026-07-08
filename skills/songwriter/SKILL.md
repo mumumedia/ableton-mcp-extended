@@ -1,9 +1,9 @@
 ---
-name: ableton-songwriter
+name: songwriter
 description: Professional songwriting workflow for Ableton: structured intake, production brief, composition/arrangement execution, plugin-aware instrument loading, quick mix, QA, and revision handoff.
 ---
 
-# Ableton Songwriter
+# Songwriter
 
 ## Objective
 Convert an open-ended songwriting request into a playable, editable Ableton draft with:
