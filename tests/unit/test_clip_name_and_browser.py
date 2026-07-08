@@ -62,40 +62,40 @@ def _make_midi_clip():
 class TestClipNameResolution:
 
     def test_clip_name_passed_to_resolve(self):
-        """clip_name='Verse' is forwarded to _resolve_arrangement_clip."""
+        """clip_name='Verse' is forwarded to _resolve_session_clip."""
         script = _make_script()
         clip = _make_midi_clip()
-        script._resolve_arrangement_clip = MagicMock(return_value=(MagicMock(), clip))
+        script._resolve_session_clip = MagicMock(return_value=(MagicMock(), clip))
 
         script._manage_clip_automation(0, 0, "clear_all", "", {}, "Verse")
 
-        script._resolve_arrangement_clip.assert_called_once_with(0, 0, "Verse")
+        script._resolve_session_clip.assert_called_once_with(0, 0, "Verse")
 
     def test_clip_index_used_when_no_name(self):
-        """clip_name=None passes through unchanged to _resolve_arrangement_clip."""
+        """clip_name=None passes through unchanged to _resolve_session_clip."""
         script = _make_script()
         clip = _make_midi_clip()
-        script._resolve_arrangement_clip = MagicMock(return_value=(MagicMock(), clip))
+        script._resolve_session_clip = MagicMock(return_value=(MagicMock(), clip))
 
         script._manage_clip_automation(0, 2, "clear_all", "", {}, None)
 
-        script._resolve_arrangement_clip.assert_called_once_with(0, 2, None)
+        script._resolve_session_clip.assert_called_once_with(0, 2, None)
 
     def test_empty_string_clip_name_uses_index(self):
-        """clip_name='' (the default server.py sends) passes through to _resolve_arrangement_clip.
-        _resolve_arrangement_clip's own falsy check handles the fallthrough to clip_index."""
+        """clip_name='' (the default server.py sends) passes through to _resolve_session_clip.
+        _resolve_session_clip's own falsy check handles the fallthrough to clip_index."""
         script = _make_script()
         clip = _make_midi_clip()
-        script._resolve_arrangement_clip = MagicMock(return_value=(MagicMock(), clip))
+        script._resolve_session_clip = MagicMock(return_value=(MagicMock(), clip))
 
         script._manage_clip_automation(0, 3, "clear_all", "", {}, "")
 
-        script._resolve_arrangement_clip.assert_called_once_with(0, 3, "")
+        script._resolve_session_clip.assert_called_once_with(0, 3, "")
 
     def test_unknown_clip_name_raises(self):
-        """ValueError from _resolve_arrangement_clip propagates out of _manage_clip_automation."""
+        """ValueError from _resolve_session_clip propagates out of _manage_clip_automation."""
         script = _make_script()
-        script._resolve_arrangement_clip = MagicMock(
+        script._resolve_session_clip = MagicMock(
             side_effect=ValueError("Clip 'Unknown' not found")
         )
 

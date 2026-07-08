@@ -5,11 +5,11 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Ableton Live 11+](https://img.shields.io/badge/Ableton%20Live-11+-orange.svg)](https://www.ableton.com/)
 
-This project builds on the original [ableton-mcp-extended](https://github.com/uisato/ableton-mcp-extended) by uisato, with extended skills from [glincker/ableton-skills](https://github.com/glincker/ableton-skills).
+This project builds on the [ableton-mcp-extended](https://github.com/uisato/ableton-mcp-extended) project by uisato, with extended skills from [glincker/ableton-skills](https://github.com/glincker/ableton-skills).
 
 ---
 
-This tool is designed for producers, developers, and AI enthusiasts who want to streamline their music production workflow, experiment with generative music, and build custom integrations with Ableton Live.
+The tools are designed for musicians, producers, developers, and music enthusiasts who want to streamline their music production workflow, experiment with generative music, and use custom integrations with Ableton Live (and other DAW software in the future).
 
 ---
 
@@ -60,7 +60,7 @@ This project provides comprehensive, programmatic control over the Ableton Live 
 ### Prerequisites
 - Ableton Live 11+ (any edition)
 - Python 3.10 or higher
-- Claude Desktop or Cursor IDE
+- Claude Desktop or Visual Studio IDE
 
 ### 1. **Get the Code**
 ```bash
@@ -135,8 +135,8 @@ graph TB
     E --> F[🎵 Your Music]
 ```
 
-1. You issue a command in plain English to your AI assistant (e.g., "Create a new MIDI track and name it 'Bass'").
-2. The AI Assistant understands the intent and calls the appropriate tool from the MCP server.
+1. You issue a command in plain English to your Studioworks assistant (e.g., "Create a new MIDI track and name it 'Bass'").
+2. The Studioworks Assistant understands the intent and calls the appropriate tool from the MCP server.
 3. The MCP Server (server.py) receives the tool call and constructs a specific JSON command.
 4. The Ableton Remote Script (__init__.py), running inside Live, receives the JSON command via a socket connection.
 5. The Remote Script executes the command using the official Ableton Live API, making the change in your session instantly.
@@ -195,6 +195,7 @@ This project includes several specialized components:
 - ~**VST Plugin Support** - Control third-party plugins~ → Done!
 - ~**Automation Point Placement**~ → Done!
 - ~**Arrangement View** - Full timeline control~ → Done!
+- ~**Optimize Token Usage** - Reduce the number of tokens needed for each completion
 - **Hardware Integration** - Bridge MIDI controllers through AI
 - **Advanced AI** - Smarter and better music understanding and generation
 

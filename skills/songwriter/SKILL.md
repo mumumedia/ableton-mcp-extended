@@ -1,9 +1,9 @@
 ---
-name: ableton-songwriter
+name: songwriter
 description: Professional songwriting workflow for Ableton: structured intake, production brief, composition/arrangement execution, plugin-aware instrument loading, quick mix, QA, and revision handoff.
 ---
 
-# Ableton Songwriter
+# Songwriter
 
 ## Objective
 Convert an open-ended songwriting request into a playable, editable Ableton draft with:
@@ -81,6 +81,7 @@ Proceed automatically after brief unless user requests approval gate.
 
 ### 2) Instrument Strategy
 - Try user-owned external plugins when relevant and available.
+- Before calling `load_instrument_or_effect` for any stock/library instrument or preset, first resolve its real `uri` via `get_browser_items_at_path` (drill down from `Instruments` or `Sounds`) or `get_browser_tree`. Never construct or guess a URI from memory or convention — the real scheme is `query:Synths#...:FileId_NNNN` (or similar live-browser output), not a hand-built path like `query:LivePacks#www.ableton.com/0:Devices:Instruments:...`.
 - If external plugins are unavailable, fallback to stock devices and state fallback.
 - For electronic/hybrid leads, prioritize modern synth clarity before layering.
 - For acoustic-forward requests without audio assets, use MIDI placeholders with clear naming.
@@ -98,6 +99,7 @@ Proceed automatically after brief unless user requests approval gate.
 - Preferred default: 32 bars with intro + A + B.
 - Add transitions at section boundaries (drum fill, riser, filter move, dropout).
 - Place cue points at major sections for fast iteration.
+- Automation (filter moves, volume rides, buildups): `manage_clip_automation` only works on Session View clips, and promoting a clip to the arrangement via `duplicate_clip_to_arrangement` does NOT carry its automation along (live-verified — automation is silently dropped). If automation-coach or similar produces automation on a session clip, do not promote that clip expecting the automation to survive. Either draw the automation manually in Arrangement View after placement, or keep the automated moment as a session-only element.
 
 ### 5) Quick Mix Baseline
 - Set faders for immediate readability (no clipping on master).
@@ -114,7 +116,7 @@ Proceed automatically after brief unless user requests approval gate.
 - If plugin listing/loading tools exist, check availability before assuming plugin usage.
 - When user asks for named plugin loading, prefer exact match if ambiguity exists.
 - If multiple close matches exist, request specificity instead of guessing.
-- If loading fails, continue with best available substitute and report it clearly.
+- If a load fails, do not retry variations of the same guessed URI. Browse the nearest matching folder via `get_browser_items_at_path` to find a real match; only if that also fails, continue with best available substitute and report it clearly. (This one-step browse fallback is distinct from the retry-loop constraint in Guardrails, which governs platform-blocked operations like final track deletion — it does not apply to instrument/preset loading.)
 
 ## Guardrails
 - Never delete/overwrite user material without explicit confirmation.
@@ -142,79 +144,9 @@ Return a short structured recap:
 - If revision alters core brief dimensions (genre, BPM, key), emit updated brief first.
 
 ## Worked Example
-
-### Example User Request
-`Write a modern melodic house idea with emotional chords and a strong drop. Keep it club-ready but not too aggressive.`
-
-### Example Intake (3 Questions)
-1. Groove focus:
-`1.` Four-on-the-floor house bounce (Recommended)  
-`2.` Straighter driving pulse  
-`3.` More syncopated / broken feel
-
-2. Harmonic color:
-`1.` Minor + warm tension chords (Recommended)  
-`2.` Brighter major/uplifting  
-`3.` Darker/minimal harmony
-
-3. Draft size:
-`1.` 32 bars (Recommended)  
-`2.` 16 bars quick sketch  
-`3.` 64 bars extended draft
-
-### Example Production Brief
-```md
-Production Brief
-- Genre/Reference: Melodic House (modern, emotional)
-- Mood/Intent: Uplifting tension with controlled energy
-- BPM/Groove: 124 BPM, 4-on-the-floor bounce
-- Key/Mode: F# minor
-- Song Form: Intro -> A groove -> B/drop
-- Section Lengths: 8 + 8 + 16 (32 bars total)
-- Instrument Priorities: Kick/bass lock, emotional chord stack, lead hook, top percussion
-- Vocal Plan: No vocal in v1 (instrumental motif only)
-- Mix Target: Club-ready draft with headroom preserved
-- Constraints/Do-Not-Do: Avoid harsh high-end and over-compression
-```
-
-### Example Build Plan (Ableton Actions)
-1. Set tempo to 124 BPM.
-2. Create/prepare role tracks:
-- `Kick`, `Bass`, `Chord Stack`, `Lead Hook`, `Top Perc`, `FX`, `Atmos`, `Reference Bus`.
-3. Load instruments/effects:
-- Prefer external synth for `Chord Stack` and `Lead Hook` if available.
-- Fallback to stock synth + utility processing if plugin unavailable.
-4. Write section A (8 bars):
-- establish kick+bass groove and core chord rhythm.
-5. Write section B/drop (16 bars):
-- increase density, widen support layers, strengthen hook rhythm.
-6. Add transitions:
-- riser, fill, or filter move between A and B.
-7. Place cue points:
-- `Intro`, `A`, `Drop`.
-8. Quick mix baseline:
-- gain balance, low-end mono, prevent master clipping.
-
-### Example Handoff
-```md
-Built
-- 32-bar melodic house draft in F# minor at 124 BPM.
-- Sections: Intro (8), A groove (8), Drop (16).
-- Core tracks: Kick, Bass, Chord Stack, Lead Hook, Top Perc, FX, Atmos.
-
-Sound Choices
-- Lead/chords used [plugin name] with fallback to [stock device] where needed.
-
-Current Constraints
-- No vocal yet; arrangement optimized for instrumental draft.
-
-Revision Options
-1. Make drop more aggressive (drum/bass density + transient emphasis).
-2. Make it more emotional (longer chord sustains + softer top end).
-3. Extend to 64 bars with breakdown + second drop.
-4. Add vocal chop motif in section B.
-```
+Full example (intake → brief → build plan → handoff) for a melodic house request: [worked-example.md](references/worked-example.md).
 
 ## References
 - Intake prompts and option bank: [intake-mcq.md](references/intake-mcq.md)
 - Genre defaults and templates: [song-recipes.md](references/song-recipes.md)
+- Full worked example: [worked-example.md](references/worked-example.md)

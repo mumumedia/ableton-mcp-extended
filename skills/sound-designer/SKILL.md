@@ -84,3 +84,4 @@ Use `load_instrument_or_effect` to load a synth onto the track before editing it
 - Don't max out resonance — anything above 70% on Wavetable's filter risks self-oscillation that masks the patch.
 - Don't load presets without inspecting first; the user may have favorites already on the track.
 - Don't apply more than 6 effects in one chain — clarity over saturation.
+- Don't guess or hand-construct a browser URI for a named preset — resolve it via `get_browser_items_at_path` first (stock device URIs like `query:Synths#Wavetable` or `query:Audio Effects#EQ Eight` are static and safe to use directly).

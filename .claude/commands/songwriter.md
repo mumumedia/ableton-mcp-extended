@@ -2,13 +2,7 @@
 description: "Compose/arrange songs in Ableton using the structured songwriter workflow"
 ---
 
-Use the Ableton songwriter workflow defined in (prefer project-local path, otherwise fallback):
-- `skills/ableton-songwriter/SKILL.md`
-- `skills/ableton-songwriter/references/intake-mcq.md`
-- `skills/ableton-songwriter/references/song-recipes.md`
-- `/Users/robbietylman/GitHub/ableton-mcp-extended/skills/ableton-songwriter/SKILL.md`
-- `/Users/robbietylman/GitHub/ableton-mcp-extended/skills/ableton-songwriter/references/intake-mcq.md`
-- `/Users/robbietylman/GitHub/ableton-mcp-extended/skills/ableton-songwriter/references/song-recipes.md`
+Use the songwriter workflow defined in `skills/songwriter/SKILL.md`, `skills/songwriter/references/intake-mcq.md`, and `skills/songwriter/references/song-recipes.md`.
 
 Execution requirements:
 - Follow the intake protocol and production brief contract from the skill.

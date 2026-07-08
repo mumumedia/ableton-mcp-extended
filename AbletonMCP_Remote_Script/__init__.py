@@ -232,7 +232,7 @@ class AbletonMCP(ControlSurface):
                                  "set_tempo", "fire_clip", "stop_clip",
                                  "start_playback", "stop_playback", "load_browser_item",
                                  "set_song_time", "set_arrangement_loop", "jump_to_cue",
-                                 "create_cue_point", "delete_cue_point",
+                                 "finalize_create_cue_point", "finalize_delete_cue_point",
                                  "create_arrangement_clip", "create_arrangement_audio_clip",
                                  "duplicate_to_arrangement", "delete_arrangement_clip",
                                  "set_arrangement_clip_property",
@@ -309,13 +309,13 @@ class AbletonMCP(ControlSurface):
                             direction = params.get("direction", None)
                             name = params.get("name", None)
                             result = self._jump_to_cue(direction, name)
-                        elif command_type == "create_cue_point":
+                        elif command_type == "finalize_create_cue_point":
                             time_val = params.get("time", 0.0)
                             name = params.get("name", "")
-                            result = self._create_cue_point(time_val, name)
-                        elif command_type == "delete_cue_point":
+                            result = self._finalize_create_cue_point(time_val, name)
+                        elif command_type == "finalize_delete_cue_point":
                             time_val = params.get("time", 0.0)
-                            result = self._delete_cue_point(time_val)
+                            result = self._finalize_delete_cue_point(time_val)
                         elif command_type == "create_arrangement_clip":
                             ti = params.get("track_index", 0)
                             pos = params.get("position", 0.0)
@@ -569,6 +569,42 @@ class AbletonMCP(ControlSurface):
                 clip_index, len(clips) - 1, track.name))
 
         return track, clips[clip_index]
+
+    def _resolve_session_clip(self, track_index, clip_index=None, clip_name=None):
+        """Resolve a Session View clip by index or name.
+
+        Returns (track, clip) tuple.
+        """
+        if track_index < 0 or track_index >= len(self._song.tracks):
+            raise IndexError("Track index {0} out of range (0-{1})".format(
+                track_index, len(self._song.tracks) - 1))
+
+        track = self._song.tracks[track_index]
+        slots = track.clip_slots
+
+        if clip_name:
+            matches = [(i, s) for i, s in enumerate(slots) if s.has_clip and s.clip.name == clip_name]
+            if len(matches) == 0:
+                raise ValueError("No session clip named '{0}' on track '{1}'".format(
+                    clip_name, track.name))
+            if len(matches) > 1:
+                raise ValueError("Ambiguous: {0} clips named '{1}' on track '{2}'".format(
+                    len(matches), clip_name, track.name))
+            return track, matches[0][1].clip
+
+        if clip_index is None:
+            raise ValueError("Either clip_index or clip_name must be provided")
+
+        if clip_index < 0 or clip_index >= len(slots):
+            raise IndexError("Clip index {0} out of range (0-{1}) on track '{2}'".format(
+                clip_index, len(slots) - 1, track.name))
+
+        clip_slot = slots[clip_index]
+        if not clip_slot.has_clip:
+            raise ValueError("No clip in slot {0} on track '{1}'".format(
+                clip_index, track.name))
+
+        return track, clip_slot.clip
 
     def _check_overlap(self, track, position, length):
         """Return list of clip names that overlap with [position, position+length)."""
@@ -1286,27 +1322,54 @@ class AbletonMCP(ControlSurface):
             self.log_message("Error jumping to cue: " + str(e))
             raise
 
-    def _create_cue_point(self, time, name=""):
-        """Create a cue point at the given time."""
+    def _finalize_create_cue_point(self, time, name=""):
+        """Create a cue point at the given time. Must be called after a
+        set_song_time command (as a separate dispatch) has already moved the
+        playhead to `time` -- current_song_time does not reliably reflect an
+        assignment made earlier in the same function call (confirmed via
+        instrumented live testing during Plan 06-05: neither a bounded
+        retry loop, an extended real-time busy-spin, nor extra
+        schedule_message hops within one call ever observed the new value).
+        """
         try:
+            if self._song.is_playing:
+                raise RuntimeError("Cannot reliably create cue points while playback is active -- the playhead keeps advancing between the position-set and finalize steps. Stop playback first.")
+            current = self._song.current_song_time
+            if abs(current - time) >= 0.01:
+                raise ValueError(
+                    "Playhead has not reached the target position yet (at {0}, expected {1}); "
+                    "the position-set step may not have completed".format(current, time))
             for cp in tuple(self._song.cue_points):
                 if abs(cp.time - time) < 0.01:
                     raise ValueError("Cue point already exists at this position: " + cp.name)
-            self._song.current_song_time = time
             self._song.set_or_delete_cue()
+            created = None
+            for cp in tuple(self._song.cue_points):
+                if abs(cp.time - time) < 0.01:
+                    created = cp
+                    break
+            if created is None:
+                raise ValueError("Cue point creation could not be verified -- no cue point found at the target position after the operation")
             if name:
-                for cp in tuple(self._song.cue_points):
-                    if abs(cp.time - time) < 0.01:
-                        cp.name = name
-                        break
-            return {"time": time, "name": name}
+                created.name = name
+            return {"time": created.time, "name": created.name}
         except Exception as e:
-            self.log_message("Error creating cue point: " + str(e))
+            self.log_message("Error finalizing cue point creation: " + str(e))
             raise
 
-    def _delete_cue_point(self, time):
-        """Delete a cue point at the given time."""
+    def _finalize_delete_cue_point(self, time):
+        """Delete the cue point at the given time. Must be called after a
+        set_song_time command (as a separate dispatch) has already moved the
+        playhead to `time` -- see _finalize_create_cue_point for why.
+        """
         try:
+            if self._song.is_playing:
+                raise RuntimeError("Cannot reliably delete cue points while playback is active -- the playhead keeps advancing between the position-set and finalize steps. Stop playback first.")
+            current = self._song.current_song_time
+            if abs(current - time) >= 0.01:
+                raise ValueError(
+                    "Playhead has not reached the target position yet (at {0}, expected {1}); "
+                    "the position-set step may not have completed".format(current, time))
             found = False
             for cp in self._song.cue_points:
                 if abs(cp.time - time) < 0.01:
@@ -1314,11 +1377,13 @@ class AbletonMCP(ControlSurface):
                     break
             if not found:
                 raise ValueError("No cue point at this position")
-            self._song.current_song_time = time
             self._song.set_or_delete_cue()
+            still_there = any(abs(cp.time - time) < 0.01 for cp in self._song.cue_points)
+            if still_there:
+                raise ValueError("Cue point deletion could not be verified -- a cue point still exists at the target position after the operation")
             return {"deleted": True}
         except Exception as e:
-            self.log_message("Error deleting cue point: " + str(e))
+            self.log_message("Error finalizing cue point deletion: " + str(e))
             raise
 
     def _validate_not_return_or_master(self, track_index):
@@ -1565,7 +1630,7 @@ class AbletonMCP(ControlSurface):
     def _manage_clip_automation(self, track_index, clip_index, action, parameter_name="", params=None, clip_name=None):
         """Create or clear automation envelopes."""
         try:
-            track, clip = self._resolve_arrangement_clip(track_index, clip_index, clip_name)
+            track, clip = self._resolve_session_clip(track_index, clip_index, clip_name)
             if action == "clear_all":
                 clip.clear_all_envelopes()
                 return {"action": "clear_all", "done": True}

@@ -105,3 +105,4 @@ After applying, the user listens. Adjust based on feedback:
 - Don't put reverb in-line — always on a send.
 - Don't load expensive third-party plugins by default. Stock chain works for 80% of cases.
 - Don't pitch-correct outside the song's key without confirming the key first.
+- Don't guess or hand-construct a browser URI for a named preset — resolve it via `get_browser_items_at_path` first (stock device URIs like `query:Synths#Wavetable` or `query:Audio Effects#EQ Eight` are static and safe to use directly).
