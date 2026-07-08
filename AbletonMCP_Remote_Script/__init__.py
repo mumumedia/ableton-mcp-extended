@@ -1332,6 +1332,8 @@ class AbletonMCP(ControlSurface):
         schedule_message hops within one call ever observed the new value).
         """
         try:
+            if self._song.is_playing:
+                raise RuntimeError("Cannot reliably create cue points while playback is active -- the playhead keeps advancing between the position-set and finalize steps. Stop playback first.")
             current = self._song.current_song_time
             if abs(current - time) >= 0.01:
                 raise ValueError(
@@ -1361,6 +1363,8 @@ class AbletonMCP(ControlSurface):
         playhead to `time` -- see _finalize_create_cue_point for why.
         """
         try:
+            if self._song.is_playing:
+                raise RuntimeError("Cannot reliably delete cue points while playback is active -- the playhead keeps advancing between the position-set and finalize steps. Stop playback first.")
             current = self._song.current_song_time
             if abs(current - time) >= 0.01:
                 raise ValueError(

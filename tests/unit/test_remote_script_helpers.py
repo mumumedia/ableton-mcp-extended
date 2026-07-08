@@ -133,6 +133,7 @@ class TestCreateCuePointAssignsName:
 
     @staticmethod
     def _wire_toggle(script, returned_cue, current_song_time):
+        script._song.is_playing = False
         script._song.current_song_time = current_song_time
         script._song.cue_points = ()
 
@@ -177,4 +178,23 @@ class TestCreateCuePointAssignsName:
             assert False, "expected ValueError"
         except ValueError as e:
             assert "has not reached the target position" in str(e)
+
+    def test_active_playback_raises_clear_error(self):
+        # During active playback the playhead keeps advancing between the
+        # set_song_time and finalize dispatches, so the position can never be
+        # trusted -- must fail fast with an actionable error, not the more
+        # confusing "playhead has not reached target" message (Gemini review)
+        script = _make_script()
+        cue = MagicMock()
+        cue.time = 16.0
+        cue.name = ""
+        self._wire_toggle(script, cue, current_song_time=16.0)
+        script._song.is_playing = True
+
+        try:
+            script._finalize_create_cue_point(time=16.0, name="Drop")
+            assert False, "expected RuntimeError"
+        except RuntimeError as e:
+            assert "playback is active" in str(e)
+        assert script._song.set_or_delete_cue.call_count == 0
         assert script._song.set_or_delete_cue.call_count == 0

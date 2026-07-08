@@ -530,22 +530,22 @@ def get_track_volume(ctx: Context, track_index: int) -> str:
 
 
 @mcp.tool()
-def set_track_property(ctx: Context, track_index: int, property: Literal["volume", "panning"], value: float) -> str:
+def set_track_property(ctx: Context, track_index: int, property_name: Literal["volume", "panning"], value: float) -> str:
     """Set the mixer fader volume or panning for a track directly (not a device parameter).
 
     Volume scale (normalized): 0.0 = silence, 0.85 = 0 dB (unity gain, Ableton's
     default fader position), 1.0 = maximum (~+6 dB). Panning scale: -1.0 = full left,
-    0.0 = center, +1.0 = full right. value is clamped to the valid range for property.
+    0.0 = center, +1.0 = full right. value is clamped to the valid range for property_name.
 
     Parameters:
     - track_index: Track number (1-based). Return tracks come after session tracks.
-    - property: "volume" or "panning".
+    - property_name: "volume" or "panning".
     - value: For volume, 0.0-1.0 (0.85 = unity/0dB). For panning, -1.0 to 1.0.
     """
     try:
         ableton = get_ableton_connection()
         ti = _to_zero_based(track_index, "track_index")
-        if property == "volume":
+        if property_name == "volume":
             clamped = max(0.0, min(1.0, value))
             result = ableton.send_command("set_track_volume", {
                 "track_index": ti,
@@ -557,7 +557,7 @@ def set_track_property(ctx: Context, track_index: int, property: Literal["volume
             unity = 0.85
             db_str = f"{20 * math.log10(vol / unity):+.1f} dB" if vol > 0 else "-inf dB"
             return f"Set '{name}' fader to {vol:.4f} (≈ {db_str})"
-        elif property == "panning":
+        elif property_name == "panning":
             clamped = max(-1.0, min(1.0, value))
             result = ableton.send_command("set_track_panning", {
                 "track_index": ti,
@@ -568,10 +568,10 @@ def set_track_property(ctx: Context, track_index: int, property: Literal["volume
             pan_str = "center" if abs(pan) < 0.01 else (f"{abs(pan):.2f} {'L' if pan < 0 else 'R'}")
             return f"Set '{name}' panning to {pan:.4f} ({pan_str})"
         else:
-            return f"Error: unknown property '{property}' (expected 'volume' or 'panning')"
+            return f"Error: unknown property '{property_name}' (expected 'volume' or 'panning')"
     except Exception as e:
-        logger.error(f"Error setting track {property}: {str(e)}")
-        return f"Error setting track {property}: {str(e)}"
+        logger.error(f"Error setting track {property_name}: {str(e)}")
+        return f"Error setting track {property_name}: {str(e)}"
 
 
 @mcp.tool()
