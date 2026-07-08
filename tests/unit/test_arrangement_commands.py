@@ -177,35 +177,97 @@ class TestJumpToCuePointCommand:
 
 
 class TestCreateCuePointCommand:
-    """Test create/delete cue point commands."""
+    """Test create/delete cue point commands.
+
+    create_cue_point/delete_cue_point send TWO separate commands (set_song_time,
+    then finalize_create_cue_point/finalize_delete_cue_point) because Ableton's
+    current_song_time does not reliably update within a single Remote Script
+    call -- confirmed via live instrumented testing in Plan 06-05. A single
+    combined command silently created/deleted cues at the stale pre-call
+    position instead of the requested one.
+    """
 
     @patch('MCP_Server.server._get_time_signature', return_value=(4, 4))
     @patch('MCP_Server.server.get_ableton_connection')
-    def test_create_at_bar(self, mock_conn, mock_ts):
-        # Creating a cue point at bar 5 should convert to beat 16.0 and include the name
+    def test_create_sends_set_song_time_then_finalize(self, mock_conn, mock_ts):
+        # Creating a cue point at bar 5 should first move the playhead, then finalize
         mock_ableton = MagicMock()
-        mock_ableton.send_command.return_value = {}
+        mock_ableton.send_command.return_value = {"time": 16.0, "name": "Bridge"}
         mock_conn.return_value = mock_ableton
 
         from MCP_Server.server import create_cue_point
         create_cue_point(MagicMock(), bar=5, name="Bridge")
 
-        mock_ableton.send_command.assert_called_with(
-            "create_cue_point", {"time": 16.0, "name": "Bridge"})
+        assert mock_ableton.send_command.call_args_list == [
+            call("set_song_time", {"time": 16.0}),
+            call("finalize_create_cue_point", {"time": 16.0, "name": "Bridge"}),
+        ]
 
     @patch('MCP_Server.server._get_time_signature', return_value=(4, 4))
     @patch('MCP_Server.server.get_ableton_connection')
-    def test_delete_at_bar(self, mock_conn, mock_ts):
-        # Deleting a cue point at bar 5 should convert to beat 16.0
+    def test_create_reports_verified_position_not_echoed_input(self, mock_conn, mock_ts):
+        # If the verified result differs from the requested position (e.g. rounding),
+        # the reported message must reflect the actual verified outcome, not the request
         mock_ableton = MagicMock()
-        mock_ableton.send_command.return_value = {}
+        mock_ableton.send_command.return_value = {"time": 20.0, "name": "Bridge"}
+        mock_conn.return_value = mock_ableton
+
+        from MCP_Server.server import create_cue_point
+        result = create_cue_point(MagicMock(), bar=5, name="Bridge")
+
+        assert "bar 6" in result  # beat 20.0 in 4/4 -> bar 6, not the requested bar 5
+
+    @patch('MCP_Server.server._get_time_signature', return_value=(4, 4))
+    @patch('MCP_Server.server.get_ableton_connection')
+    def test_create_surfaces_finalize_error_not_false_success(self, mock_conn, mock_ts):
+        # If finalize_create_cue_point raises (e.g. verification failed), the tool
+        # must surface an honest error, never a false-positive success message
+        mock_ableton = MagicMock()
+        mock_ableton.send_command.side_effect = [
+            {"time": 16.0},
+            Exception("Cue point creation could not be verified"),
+        ]
+        mock_conn.return_value = mock_ableton
+
+        from MCP_Server.server import create_cue_point
+        result = create_cue_point(MagicMock(), bar=5, name="Bridge")
+
+        assert "Error" in result
+        assert "could not be verified" in result
+
+    @patch('MCP_Server.server._get_time_signature', return_value=(4, 4))
+    @patch('MCP_Server.server.get_ableton_connection')
+    def test_delete_sends_set_song_time_then_finalize(self, mock_conn, mock_ts):
+        # Deleting a cue point at bar 5 should first move the playhead, then finalize
+        mock_ableton = MagicMock()
+        mock_ableton.send_command.return_value = {"deleted": True}
         mock_conn.return_value = mock_ableton
 
         from MCP_Server.server import delete_cue_point
         delete_cue_point(MagicMock(), bar=5)
 
-        mock_ableton.send_command.assert_called_with(
-            "delete_cue_point", {"time": 16.0})
+        assert mock_ableton.send_command.call_args_list == [
+            call("set_song_time", {"time": 16.0}),
+            call("finalize_delete_cue_point", {"time": 16.0}),
+        ]
+
+    @patch('MCP_Server.server._get_time_signature', return_value=(4, 4))
+    @patch('MCP_Server.server.get_ableton_connection')
+    def test_delete_surfaces_finalize_error_not_false_success(self, mock_conn, mock_ts):
+        # If finalize_delete_cue_point raises (e.g. verification failed), the tool
+        # must surface an honest error, never a false-positive success message
+        mock_ableton = MagicMock()
+        mock_ableton.send_command.side_effect = [
+            {"time": 16.0},
+            Exception("Cue point deletion could not be verified"),
+        ]
+        mock_conn.return_value = mock_ableton
+
+        from MCP_Server.server import delete_cue_point
+        result = delete_cue_point(MagicMock(), bar=5)
+
+        assert "Error" in result
+        assert "could not be verified" in result
 
 
 class TestCreateArrangementMidiClipCommand:

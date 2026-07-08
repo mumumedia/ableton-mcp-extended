@@ -115,7 +115,7 @@ class AbletonConnection:
             "set_tempo", "fire_clip", "stop_clip", "set_device_parameter",
             "start_playback", "stop_playback", "load_instrument_or_effect",
             "set_song_time", "set_arrangement_loop", "jump_to_cue",
-            "create_cue_point", "delete_cue_point",
+            "finalize_create_cue_point", "finalize_delete_cue_point",
             "create_arrangement_clip", "create_arrangement_audio_clip",
             "duplicate_to_arrangement", "delete_arrangement_clip",
             "set_arrangement_clip_property",
@@ -1368,6 +1368,12 @@ def jump_to_cue_point(ctx: Context, direction: str = "", name: str = "") -> str:
 def create_cue_point(ctx: Context, bar: int = 0, beat: float = 0.0, name: str = "") -> str:
     """Create a cue point at a position.
 
+    Sends two commands internally (move playhead, then create+verify) because
+    Ableton's current_song_time does not reliably update within a single
+    Remote Script call -- the playhead must settle via a separate round-trip
+    before the cue can be toggled. The reported result reflects the actual
+    verified cue position, not the requested one.
+
     Parameters:
     - bar: Bar number (1-based).
     - beat: Beat position (0-based).
@@ -1376,8 +1382,12 @@ def create_cue_point(ctx: Context, bar: int = 0, beat: float = 0.0, name: str = 
     try:
         ableton = get_ableton_connection()
         time_val = _convert_bar_to_beat(bar, beat)
-        result = ableton.send_command("create_cue_point", {"time": time_val, "name": name})
-        return f"Created cue point '{name}' at bar {bar if bar > 0 else '?'}"
+        ableton.send_command("set_song_time", {"time": time_val})
+        result = ableton.send_command("finalize_create_cue_point", {"time": time_val, "name": name})
+        num, denom = _get_time_signature()
+        actual_bar = beat_to_bar(result.get("time", time_val), num, denom)
+        actual_name = result.get("name", name)
+        return f"Created cue point '{actual_name}' at bar {actual_bar}"
     except Exception as e:
         logger.error(f"Error creating cue point: {str(e)}")
         return f"Error creating cue point: {str(e)}"
@@ -1387,6 +1397,10 @@ def create_cue_point(ctx: Context, bar: int = 0, beat: float = 0.0, name: str = 
 def delete_cue_point(ctx: Context, bar: int = 0, beat: float = 0.0) -> str:
     """Delete a cue point at a position.
 
+    Sends two commands internally (move playhead, then delete+verify) --
+    see create_cue_point's docstring for why. Only reports success once the
+    cue point is confirmed gone.
+
     Parameters:
     - bar: Bar number (1-based).
     - beat: Beat position (0-based).
@@ -1394,7 +1408,8 @@ def delete_cue_point(ctx: Context, bar: int = 0, beat: float = 0.0) -> str:
     try:
         ableton = get_ableton_connection()
         time_val = _convert_bar_to_beat(bar, beat)
-        ableton.send_command("delete_cue_point", {"time": time_val})
+        ableton.send_command("set_song_time", {"time": time_val})
+        ableton.send_command("finalize_delete_cue_point", {"time": time_val})
         return f"Deleted cue point at bar {bar if bar > 0 else '?'}"
     except Exception as e:
         logger.error(f"Error deleting cue point: {str(e)}")
@@ -1790,11 +1805,16 @@ def manage_clip_automation(
     time_in_beats: float = 0.0,
     value: float = 0.5,
 ) -> str:
-    """Create or clear automation envelopes on arrangement clips, or add automation points.
+    """Create or clear automation envelopes on Session View clips, or add automation points.
+    Ableton's API does not support automation envelopes on Arrangement clips at all —
+    clip_index/clip_name here refer to a Session View clip slot, not an arrangement
+    position. For arrangement-timeline automation, either author it on a session clip
+    before promoting with duplicate_clip_to_arrangement, or edit manually in Ableton's
+    Arrangement View.
 
     Parameters:
     - track_index: Track number (1-based).
-    - clip_index: Clip position (1-based).
+    - clip_index: Session clip slot (1-based).
     - clip_name: Clip name (alternative to clip_index).
     - action: see type.
     - parameter_name: Exact Live API parameter name (e.g., "Track Volume", "Track Panning"

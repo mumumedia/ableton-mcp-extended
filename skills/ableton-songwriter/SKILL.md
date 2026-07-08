@@ -99,6 +99,7 @@ Proceed automatically after brief unless user requests approval gate.
 - Preferred default: 32 bars with intro + A + B.
 - Add transitions at section boundaries (drum fill, riser, filter move, dropout).
 - Place cue points at major sections for fast iteration.
+- Automation (filter moves, volume rides, buildups): `manage_clip_automation` only works on Session View clips, and promoting a clip to the arrangement via `duplicate_clip_to_arrangement` does NOT carry its automation along (live-verified — automation is silently dropped). If automation-coach or similar produces automation on a session clip, do not promote that clip expecting the automation to survive. Either draw the automation manually in Arrangement View after placement, or keep the automated moment as a session-only element.
 
 ### 5) Quick Mix Baseline
 - Set faders for immediate readability (no clipping on master).

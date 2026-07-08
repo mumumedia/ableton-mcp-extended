@@ -79,7 +79,7 @@ create_arrangement_midi_clip(
   name="<Section> <Role>"   ← e.g. "Drop Kick", "Buildup Bass"
 )
 ```
-Name all clips — required for `clip_name` addressing in `manage_clip_automation`.
+Name all clips — required for `clip_name` addressing in `set_arrangement_clip_property` and `add_notes_to_arrangement_clip`.
 
 **Step 5 — Fill clips with notes**
 ```
@@ -90,20 +90,8 @@ For bass: root note per chord, held 3.8 beats, starting at bar boundaries (0.0, 
 For breakdown sections: fill pad/melody tracks only; leave drum track clips empty.
 MIDI map: see [../_shared/genre-defaults.md](../_shared/genre-defaults.md) (verify against your kit).
 
-**Step 6 — Add buildup automation**
-```
-manage_clip_automation(
-  track_index=<pad or bass track>,
-  clip_name="Buildup Bass",
-  action="add_point",
-  parameter_name="Filter Cutoff",
-  time_in_beats=0.0, value=0.05
-)
-manage_clip_automation(..., time_in_beats=<buildup length in beats>, value=1.0)
-```
-Result: full filter sweep from nearly-closed to wide-open over the buildup.
-
-Note: the correct MCP parameter key is `parameter_name` (a human-readable string like "Filter Cutoff", "volume", "panning"). Use `get_device_parameters` to see available names.
+**Step 6 — Buildup automation (manual)**
+`manage_clip_automation` only works on Session View clips — Ableton's API does not support automation envelopes on Arrangement clips at all, and promoting a session clip to the arrangement does not carry its automation along (live-verified: automation is silently dropped on promotion). Filter sweeps, volume rides, and other buildup automation on arrangement clips must be added manually in Ableton's Arrangement View after MCP-driven placement — tell the user this explicitly rather than attempting an automation call that will fail.
 
 **Step 7 — Verify**
 `get_arrangement_info` to confirm clip positions and lengths.
@@ -165,13 +153,13 @@ Always name clips `"<Section> <Role>"` format:
 - "Breakdown Pad", "Breakdown Melody"
 - "Outro Kick"
 
-Why: `manage_clip_automation(clip_name="Buildup Bass")` targets the exact clip without needing its numeric `clip_index` — essential when many clips share a track across many sections.
+Why: `set_arrangement_clip_property(clip_name="Buildup Bass")` and `add_notes_to_arrangement_clip(clip_name=...)` target the exact clip without needing its numeric `clip_index` — essential when many clips share a track across many sections.
 
 ## 6. Drop/Build Transition Checklist
 
 **Intro → Buildup:**
 - Add hi-hat layer at vel 85 on-beat, vel 65 off-beat.
-- Start filter sweep: `manage_clip_automation` on bass/pad, value 0.05 → 1.0 over buildup length.
+- Filter sweep on bass/pad (0.05 → 1.0 over buildup length): not achievable via MCP on arrangement clips — tell the user to draw it manually in Ableton's Arrangement View.
 
 **Buildup → Drop:**
 - All tracks enter at full pattern (drums + bass + pad + lead).
@@ -185,7 +173,7 @@ Why: `manage_clip_automation(clip_name="Buildup Bass")` targets the exact clip w
 
 **Breakdown → Buildup 2:**
 - Kick re-enters on bar 1 of buildup; snare+hat enter on bar 2.
-- Begin filter sweep again (same 0.05 → 1.0 pattern, compressed to fewer bars).
+- Filter sweep again (same 0.05 → 1.0 pattern, compressed to fewer bars): manual, same limitation as above.
 
 ## 7. Master Automation (Section-Level Volume Shaping)
 
@@ -200,15 +188,15 @@ After all clips are placed and notes finalized, add subtle section-level volume 
 | Buildup 2 | 0 → +0.5 dB | Rise back to peak |
 | Outro (last 8 bars) | Fade to silence | Remove layers, then mute |
 
-Apply via `manage_clip_automation` with `parameter_name="volume"` on the target track's arrangement clips (note: for MIDI tracks, automate the instrument's output volume parameter or use track-level automation in Ableton, as MIDI clip envelopes do not natively control mixer volume).
+This section-level volume shaping is not achievable via MCP tools for arrangement clips — `manage_clip_automation` only works on Session View clips, and automation does not survive promotion to the arrangement (live-verified). Tell the user to draw these volume rides manually in Ableton's Arrangement View, or, if an automated moment matters more as a one-off performance than as edited arrangement content, perform it live on a session clip before recording that performance into the arrangement.
 Keep adjustments to ±1–3 dB maximum — larger swings overwhelm the mix and mask dynamics.
 Do not apply master automation until all clip notes are finalized.
 
 ## 8. Don'ts
 
 - Don't place clips without calling `get_arrangement_info` first — overlapping existing clips silently truncates them
-- Don't skip naming clips — unnamed clips cannot be targeted by `manage_clip_automation` `clip_name`
+- Don't skip naming clips — unnamed clips cannot be targeted by `clip_name` in `set_arrangement_clip_property` or `add_notes_to_arrangement_clip`
 - Don't skip the confirm-plan step — stating the mapping before execution prevents misplaced clips that are tedious to undo
 - Don't use velocity 100–127 on all elements in the drop — match the mix balance defaults in [../_shared/genre-defaults.md](../_shared/genre-defaults.md); for emotional house keep kick ≤95 for warmth
 - Don't make breakdowns longer than 16 bars in House/Techno — listeners lose energy connection past that point
-- Don't apply master automation before clip notes are finalized — volume automation interacts with note velocities
+- Don't attempt arrangement-clip automation via `manage_clip_automation` — it only works on Session View clips and will fail; draw automation manually in Arrangement View instead

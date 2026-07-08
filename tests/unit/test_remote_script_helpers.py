@@ -127,8 +127,13 @@ class TestGetArrangementInfoSkipsGroupTracks:
 
 
 class TestCreateCuePointAssignsName:
+    """_finalize_create_cue_point assumes set_song_time has already moved the
+    playhead to `time` (as a separate command dispatch) -- see Plan 06-05.
+    """
+
     @staticmethod
-    def _wire_toggle(script, returned_cue):
+    def _wire_toggle(script, returned_cue, current_song_time):
+        script._song.current_song_time = current_song_time
         script._song.cue_points = ()
 
         def toggle():
@@ -141,9 +146,9 @@ class TestCreateCuePointAssignsName:
         cue = MagicMock()
         cue.time = 16.0
         cue.name = ""
-        self._wire_toggle(script, cue)
+        self._wire_toggle(script, cue, current_song_time=16.0)
 
-        script._create_cue_point(time=16.0, name="Drop")
+        script._finalize_create_cue_point(time=16.0, name="Drop")
 
         assert cue.name == "Drop"
 
@@ -152,8 +157,24 @@ class TestCreateCuePointAssignsName:
         cue = MagicMock()
         cue.time = 16.0
         cue.name = "1.1.1"
-        self._wire_toggle(script, cue)
+        self._wire_toggle(script, cue, current_song_time=16.0)
 
-        script._create_cue_point(time=16.0, name="")
+        script._finalize_create_cue_point(time=16.0, name="")
 
         assert cue.name == "1.1.1"
+
+    def test_playhead_not_settled_raises_clear_error(self):
+        # If current_song_time doesn't match the target (set_song_time hasn't
+        # settled yet), must raise a clear error, never proceed to toggle
+        script = _make_script()
+        cue = MagicMock()
+        cue.time = 16.0
+        cue.name = ""
+        self._wire_toggle(script, cue, current_song_time=12.0)
+
+        try:
+            script._finalize_create_cue_point(time=16.0, name="Drop")
+            assert False, "expected ValueError"
+        except ValueError as e:
+            assert "has not reached the target position" in str(e)
+        assert script._song.set_or_delete_cue.call_count == 0
