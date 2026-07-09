@@ -234,6 +234,7 @@ class AbletonMCP(ControlSurface):
                                  "set_song_time", "set_arrangement_loop", "jump_to_cue",
                                  "finalize_create_cue_point", "finalize_delete_cue_point",
                                  "create_arrangement_clip", "create_arrangement_audio_clip",
+                                 "create_session_audio_clip",
                                  "duplicate_to_arrangement", "delete_arrangement_clip",
                                  "set_arrangement_clip_property",
                                  "set_view", "control_arrangement_view",
@@ -326,6 +327,11 @@ class AbletonMCP(ControlSurface):
                             pos = params.get("position", 0.0)
                             fp = params.get("file_path", "")
                             result = self._create_arrangement_audio_clip(ti, pos, fp)
+                        elif command_type == "create_session_audio_clip":
+                            ti = params.get("track_index", 0)
+                            ci = params.get("clip_index", 0)
+                            fp = params.get("file_path", "")
+                            result = self._create_session_audio_clip(ti, ci, fp)
                         elif command_type == "duplicate_to_arrangement":
                             ti = params.get("track_index", 0)
                             ci = params.get("clip_index", 0)
@@ -833,7 +839,38 @@ class AbletonMCP(ControlSurface):
         except Exception as e:
             self.log_message("Error creating clip: " + str(e))
             raise
-    
+
+    def _create_session_audio_clip(self, track_index, clip_index, file_path):
+        """Create an audio clip from a file in the specified track and clip slot."""
+        try:
+            if track_index < 0 or track_index >= len(self._song.tracks):
+                raise IndexError("Track index out of range")
+
+            track = self._song.tracks[track_index]
+
+            if clip_index < 0 or clip_index >= len(track.clip_slots):
+                raise IndexError("Clip index out of range")
+
+            clip_slot = track.clip_slots[clip_index]
+
+            # Check if the clip slot already has a clip
+            if clip_slot.has_clip:
+                raise Exception("Clip slot already has a clip")
+
+            # Create the audio clip from file
+            clip_slot.create_audio_clip(file_path)
+
+            result = {
+                "name": clip_slot.clip.name,
+                "length": clip_slot.clip.length,
+                "is_audio": True,
+                "file_path": file_path
+            }
+            return result
+        except Exception as e:
+            self.log_message("Error creating session audio clip: " + str(e))
+            raise
+
     def _add_notes_to_clip(self, track_index, clip_index, notes):
         """Add MIDI notes to a clip"""
         try:

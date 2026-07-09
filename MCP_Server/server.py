@@ -117,6 +117,7 @@ class AbletonConnection:
             "set_song_time", "set_arrangement_loop", "jump_to_cue",
             "finalize_create_cue_point", "finalize_delete_cue_point",
             "create_arrangement_clip", "create_arrangement_audio_clip",
+            "create_session_audio_clip",
             "duplicate_to_arrangement", "delete_arrangement_clip",
             "set_arrangement_clip_property",
             "set_view", "control_arrangement_view",
@@ -597,6 +598,30 @@ def create_clip(ctx: Context, track_index: int, clip_index: int, length: float =
     except Exception as e:
         logger.error(f"Error creating clip: {str(e)}")
         return f"Error creating clip: {str(e)}"
+
+@mcp.tool()
+def create_session_audio_clip(ctx: Context, track_index: int, clip_index: int, file_path: str) -> str:
+    """
+    Create an audio clip from a file in a Session View clip slot.
+
+    Parameters:
+    - track_index: Track number (1-based).
+    - clip_index: Clip slot number (1-based).
+    - file_path: Path to the audio file.
+    """
+    try:
+        ableton = get_ableton_connection()
+        ti = _to_zero_based(track_index, "track_index")
+        ci = _to_zero_based(clip_index, "clip_index")
+        result = ableton.send_command("create_session_audio_clip", {
+            "track_index": ti,
+            "clip_index": ci,
+            "file_path": file_path,
+        })
+        return f"Created audio clip '{result.get('name', file_path)}' at track {track_index}, slot {clip_index}"
+    except Exception as e:
+        logger.error(f"Error creating session audio clip: {str(e)}")
+        return f"Error creating session audio clip: {str(e)}"
 
 @mcp.tool()
 def add_notes_to_clip(
