@@ -7,6 +7,8 @@
 
 This project builds on the [ableton-mcp-extended](https://github.com/uisato/ableton-mcp-extended) project by uisato, with extended skills from [glincker/ableton-skills](https://github.com/glincker/ableton-skills).
 
+A number of issues have been resolved including optimizing the context to reduce token consultions and adding in audio file handling and fixing a range of issues to make the skills stable and complete.
+
 ---
 
 The tools are designed for musicians, producers, developers, and music enthusiasts who want to streamline their music production workflow, experiment with generative music, and use custom integrations with Ableton Live (and other DAW software in the future).
@@ -18,20 +20,25 @@ The tools are designed for musicians, producers, developers, and music enthusias
 This project provides comprehensive, programmatic control over the Ableton Live environment.
 
 * **Session and Transport Control:**
-    * Start and stop playback.
+    * Start and stop playback, set tempo.
     * Get session info, including tempo, time signature, and track count.
-    * Manage scenes: create, delete, rename, and fire.
+    * Fire individual clips or an entire scene at once (all tracks in that row, simultaneously).
+    * Create, jump to, and delete cue points for quick navigation.
 
 * **Track Management:**
     * Create, rename, and get detailed information for MIDI and audio tracks.
-    * Control track properties: volume, panning, mute, solo, and arm.
+    * Control track properties: volume and panning.
     * Manage track grouping and folding states.
 
 * **MIDI Clip and Note Manipulation:**
-    * Create and name MIDI clips with specified lengths.
-    * Add, delete, transpose, and quantize notes within clips.
+    * Create, delete, and name MIDI clips with specified lengths.
+    * Add, delete, and replace notes within clips (Session View and Arrangement View).
     * Perform batch edits on multiple notes in a single operation.
-    * Adjust clip loop parameters and follow actions.
+
+* **Arrangement View:**
+    * Full timeline control — create, edit, and audition arrangement clips.
+    * Promote Session View loops into a structured arrangement.
+    * Loop, tempo, and playback control across the full timeline.
 
 * **Device and Parameter Control:**
     * Load instruments and effects from Ableton's browser by URI.
@@ -39,18 +46,24 @@ This project provides comprehensive, programmatic control over the Ableton Live 
     * Set and batch-set device parameters using normalized values (0.0 to 1.0).
 
 * **Automation and Envelopes:**
-    * Add and clear automation points for any device parameter within a clip.
+    * Add and clear automation points for any device parameter within a Session View clip.
     * Get information about existing clip envelopes.
+    * (Note: automation envelopes are a Session View-only concept in the Ableton API — Arrangement clip automation must be drawn manually.)
 
 * **Browser Integration:**
     * Navigate and list items from Ableton's browser.
     * Load instruments, effects, and samples directly from a browser path or URI.
-    * Import audio files directly into audio tracks or clip slots.
+    * Import audio files directly into audio tracks, Arrangement clips, or Session View clip slots.
+
+* **Grid Automation (proof-of-concept)**
+    * Load audio files straight into Session View slots (`create_session_audio_clip`) and remove them safely (`delete_session_clip`, with a built-in guard against orphaning content from Follow Actions).
+    * A standalone batch script (`scripts/populate_grid.py`) sources drum/breakbeat loops from your Ableton libraries, slices them into one-bar chops, and populates a grid with density-weighted, gap-free placement.
+    * The `grid-conductor` skill layers conversational control on top of native Ableton Follow Actions — ask for a build, a drop, a breakdown, or a content refresh, entirely in natural language.
 
 * **AI Production Skills**
-    * 12 built-in skills as slash commands: groove-builder, chord-pro, tempo-coach,
-      arrangement-coach, genre-edm-production, automation-coach, and more
-    * Invoke with /groove-builder, /chord-pro, /arrangement-coach etc. in Claude Code
+    * 13 built-in skills as slash commands: groove-builder, chord-pro, tempo-coach,
+      arrangement-coach, genre-edm-production, automation-coach, grid-conductor, and more
+    * Invoke with /groove-builder, /chord-pro, /arrangement-coach, /grid-conductor etc. in Claude Code
     * Skills encode genre-specific patterns, MIDI maps, mix balance defaults
 
 ---
@@ -195,7 +208,8 @@ This project includes several specialized components:
 - ~**VST Plugin Support** - Control third-party plugins~ → Done!
 - ~**Automation Point Placement**~ → Done!
 - ~**Arrangement View** - Full timeline control~ → Done!
-- ~**Optimize Token Usage** - Reduce the number of tokens needed for each completion
+- ~**Optimize Token Usage** - Reduce the number of tokens needed for each completion~ → Done!
+- ~**Grid Automation** - AI-driven generative Session View population + conversational playback control~ → Done!
 - **Hardware Integration** - Bridge MIDI controllers through AI
 - **Advanced AI** - Smarter and better music understanding and generation
 
