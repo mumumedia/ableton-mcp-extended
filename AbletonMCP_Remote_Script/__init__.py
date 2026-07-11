@@ -235,6 +235,7 @@ class AbletonMCP(ControlSurface):
                                  "finalize_create_cue_point", "finalize_delete_cue_point",
                                  "create_arrangement_clip", "create_arrangement_audio_clip",
                                  "create_session_audio_clip",
+                                 "delete_session_clip", "fire_scene",
                                  "duplicate_to_arrangement", "delete_arrangement_clip",
                                  "set_arrangement_clip_property",
                                  "set_view", "control_arrangement_view",
@@ -332,6 +333,13 @@ class AbletonMCP(ControlSurface):
                             ci = params.get("clip_index", 0)
                             fp = params.get("file_path", "")
                             result = self._create_session_audio_clip(ti, ci, fp)
+                        elif command_type == "delete_session_clip":
+                            ti = params.get("track_index", 0)
+                            ci = params.get("clip_index", 0)
+                            result = self._delete_session_clip(ti, ci)
+                        elif command_type == "fire_scene":
+                            si = params.get("scene_index", 0)
+                            result = self._fire_scene(si)
                         elif command_type == "duplicate_to_arrangement":
                             ti = params.get("track_index", 0)
                             ci = params.get("clip_index", 0)
@@ -869,6 +877,76 @@ class AbletonMCP(ControlSurface):
             return result
         except Exception as e:
             self.log_message("Error creating session audio clip: " + str(e))
+            raise
+
+    def _delete_session_clip(self, track_index, clip_index):
+        """Delete the clip in the specified Session View track and clip slot."""
+        try:
+            if track_index < 0 or track_index >= len(self._song.tracks):
+                raise IndexError("Track index out of range")
+
+            track = self._song.tracks[track_index]
+
+            if clip_index < 0 or clip_index >= len(track.clip_slots):
+                raise IndexError("Clip index out of range")
+
+            clip_slot = track.clip_slots[clip_index]
+
+            if not clip_slot.has_clip:
+                raise Exception("Clip slot is empty")
+
+            if any(s.has_clip for s in track.clip_slots[clip_index + 1:]):
+                raise Exception(
+                    "Cannot delete: clip slot(s) after this one still have clips "
+                    "and would be orphaned from Follow Action. Delete from the "
+                    "bottom of the track's filled clips first."
+                )
+
+            clip_slot.delete_clip()
+
+            result = {
+                "track_index": track_index,
+                "clip_index": clip_index,
+                "deleted": True
+            }
+            return result
+        except Exception as e:
+            self.log_message("Error deleting session clip: " + str(e))
+            raise
+
+    def _fire_scene(self, scene_index):
+        """Fire a scene, refusing if it would start recording on an armed empty track."""
+        try:
+            if scene_index < 0 or scene_index >= len(self._song.scenes):
+                raise IndexError("Scene index out of range")
+
+            armed_empty_tracks = []
+            for track in self._song.tracks:
+                try:
+                    is_armed = track.arm
+                except Exception:
+                    is_armed = False
+                if is_armed and scene_index < len(track.clip_slots) and not track.clip_slots[scene_index].has_clip:
+                    armed_empty_tracks.append(track.name)
+
+            if armed_empty_tracks:
+                raise Exception(
+                    "Firing this scene would start recording on armed track(s): "
+                    + ", ".join(armed_empty_tracks) + ". Disarm them first."
+                )
+
+            scene = self._song.scenes[scene_index]
+            was_empty = scene.is_empty
+            scene.fire()
+
+            result = {
+                "scene_index": scene_index,
+                "fired": True,
+                "was_empty": was_empty
+            }
+            return result
+        except Exception as e:
+            self.log_message("Error firing scene: " + str(e))
             raise
 
     def _add_notes_to_clip(self, track_index, clip_index, notes):

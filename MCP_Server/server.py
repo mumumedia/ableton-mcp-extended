@@ -118,6 +118,7 @@ class AbletonConnection:
             "finalize_create_cue_point", "finalize_delete_cue_point",
             "create_arrangement_clip", "create_arrangement_audio_clip",
             "create_session_audio_clip",
+            "delete_session_clip", "fire_scene",
             "duplicate_to_arrangement", "delete_arrangement_clip",
             "set_arrangement_clip_property",
             "set_view", "control_arrangement_view",
@@ -622,6 +623,49 @@ def create_session_audio_clip(ctx: Context, track_index: int, clip_index: int, f
     except Exception as e:
         logger.error(f"Error creating session audio clip: {str(e)}")
         return f"Error creating session audio clip: {str(e)}"
+
+@mcp.tool()
+def delete_session_clip(ctx: Context, track_index: int, clip_index: int) -> str:
+    """
+    Delete the clip in a Session View clip slot.
+
+    Parameters:
+    - track_index: Track number (1-based).
+    - clip_index: Clip slot number (1-based).
+    """
+    try:
+        ableton = get_ableton_connection()
+        ti = _to_zero_based(track_index, "track_index")
+        ci = _to_zero_based(clip_index, "clip_index")
+        ableton.send_command("delete_session_clip", {
+            "track_index": ti,
+            "clip_index": ci,
+        })
+        return f"Deleted clip at track {track_index}, slot {clip_index}"
+    except Exception as e:
+        logger.error(f"Error deleting session clip: {str(e)}")
+        return f"Error deleting session clip: {str(e)}"
+
+@mcp.tool()
+def fire_scene(ctx: Context, scene_index: int) -> str:
+    """
+    Fire an entire scene (all clip slots in that row fire together).
+
+    Parameters:
+    - scene_index: Scene number (1-based).
+    """
+    try:
+        ableton = get_ableton_connection()
+        si = _to_zero_based(scene_index, "scene_index")
+        result = ableton.send_command("fire_scene", {
+            "scene_index": si,
+        })
+        if result.get("was_empty"):
+            return f"Fired scene {scene_index} (was empty — no clips played)"
+        return f"Fired scene {scene_index}"
+    except Exception as e:
+        logger.error(f"Error firing scene: {str(e)}")
+        return f"Error firing scene: {str(e)}"
 
 @mcp.tool()
 def add_notes_to_clip(
