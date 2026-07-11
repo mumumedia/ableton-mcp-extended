@@ -24,7 +24,7 @@ Because 07-02's population script fills each track **contiguously from scene 0 d
 ## 3. Density Mapping
 
 Since every track's filled content starts at scene 0 and is denser near the top:
-- **Scene 0 (or the shallowest filled scene across tracks)** = the grid's fullest, most-energetic moment — most or all tracks have content there.
+- **Scene 1 (or the shallowest filled scene across tracks, index 0 in the JSON state returned by `get_track_info`)** = the grid's fullest, most-energetic moment — most or all tracks have content there. Note: `fire_scene`/`create_session_audio_clip`/`delete_session_clip` all take **1-based** scene indices — passing 0 raises a `ValueError`.
 - **The deepest scene that is still filled on at least one track** = the sparsest moment — few tracks reach that far.
 
 For the general energy/content vocabulary behind "build", "drop", "breakdown" (what should be playing, roughly, at each kind of moment), reuse [arrangement-coach's Section Templates](../arrangement-coach/SKILL.md#2-section-templates) rather than re-deriving genre-specific energy curves from scratch — that table already encodes this project's genre knowledge. This skill's own job is narrower: translate that vocabulary into *which scene to fire on this specific, currently-existing grid*.
@@ -44,7 +44,7 @@ fire_scene(scene_index=<deepest scene still filled on at least one track>)
 Fires the sparsest moment — expect several tracks to go silent since they have no content that deep.
 
 **"build" / "buildup" (a short progression, not an instant jump):**
-Fire a sparser scene first, briefly narrate what's happening, then fire a denser scene moments later — e.g. fire a mid-depth scene, then fire scene 0/1 shortly after. This is two sequential `fire_scene` calls, not a single call.
+Fire a sparser scene first, briefly narrate what's happening, then fire a denser scene moments later — e.g. fire a mid-depth scene, then fire scene 1 shortly after. This is two sequential `fire_scene` calls, not a single call.
 
 **"refresh the grid" / "mutate the grid" / "add variation":**
 For a **small subset** of already-filled slots (not all of them — refreshing everything defeats the point of a persistent grid), per selected slot:

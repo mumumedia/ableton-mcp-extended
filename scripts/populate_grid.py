@@ -121,7 +121,7 @@ def main() -> None:
         try:
             chops = slice_to_one_bar_chops(loop["path"], args.output_dir)
             available_chops.extend(chops)
-        except ValueError as e:
+        except Exception as e:
             print(f"Skipping {loop['name']!r}: {e}")
     print(f"Sliced {len(selected_loops)} loop(s) into {len(available_chops)} one-bar chop(s).")
 

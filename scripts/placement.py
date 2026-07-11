@@ -106,6 +106,7 @@ def plan_placements(
     planning function.
     """
     chops = list(available_chops)
+    chops.reverse()
     placements: list[dict] = []
 
     tracks: dict[int, list[tuple]] = {}
@@ -120,7 +121,7 @@ def plan_placements(
             probability = scene_fill_probability(scene_index, total_scenes)
             if rng.random() >= probability:
                 break  # stop this track's remaining (deeper) scenes - no gaps
-            file_path = chops.pop(0)
+            file_path = chops.pop()
             placements.append({
                 "track_index": track_index,
                 "clip_index": clip_index,
